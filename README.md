@@ -1,5 +1,7 @@
 # readmit: 30-day readmission risk after discharge (ARI3217 Task 26)
 
+[![ci](https://github.com/MalcolmDebattista/readmit/actions/workflows/ci.yml/badge.svg)](https://github.com/MalcolmDebattista/readmit/actions/workflows/ci.yml)
+
 The Task 26 notebook (Diabetes 130-US hospitals, UCI dataset 296) turned into an installable package, a scoring
 service and a monitored deployment. The notebook remains the reference. The package reproduces its numbers exactly
 and the build fails if it does not.
@@ -62,6 +64,13 @@ The Grafana dashboard "Readmission risk service" is provisioned automatically.
 `pytest -q` runs 31 tests: the traps, input values outside the code tables (refused with 422), the model helpers, a check that the package reproduces the notebook's
 metrics, a check that serving scores equal training scores, and API tests. Tests that need the data or the trained
 model are skipped on a fresh clone until `readmit-fetch` and `readmit-train` have been run.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs `make ci` on a fresh GitHub machine for every push and pull request:
+fetch the data → `readmit-check-data` → `readmit-train` (fails if the notebook's numbers are not reproduced) →
+ruff → the 31 tests → `docker build`. If every step passes on `main`, the image is published as
+`ghcr.io/malcolmdebattista/readmit:<version>` and `:<version>-<commit>`.
 
 ## Data
 

@@ -128,6 +128,9 @@ The re-run on 0.1.1 gave **51 checks passed, 0 failed**:
 - a burst of 30 at once was all answered, in 34 s;
 - under overload at 3/s, 49 requests were refused with 503 and the API was healthy again 3 s later.
 
+**CI (commit `7df4224`):** GitHub Actions now runs the whole check (`make ci`) on a fresh machine for every push. The
+first run passed every step and published `ghcr.io/malcolmdebattista/readmit:0.1.1`.
+
 **Still open, YOUR CALL:** if Postgres is down, the API **still answers** but the score is not saved, and only an
 error line is logged. It "fails open": the nurse still gets the list, but there is no audit record. Is that right for a
 clinical tool, or should it refuse to score without a log? (Think about the AI Act's logging requirements.)
