@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "readmit"
-version = "0.1.0"
+version = "0.1.1"
 description = "ARI3217 Task 26: 30-day readmission risk after discharge, packaged from the given notebook"
 requires-python = ">=3.11"
 dependencies = [

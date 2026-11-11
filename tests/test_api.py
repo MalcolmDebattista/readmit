@@ -51,3 +51,17 @@ def test_metrics_are_exposed(client, bundle):
     text = c.get("/metrics").text
     for name in ("predictions_total", "prediction_latency_seconds_bucket", "prediction_input_bucket", "prediction_score_bucket"):
         assert name in text
+
+
+@pytest.mark.parametrize("change", [
+    {"A1Cresult": "banana"},                       # not a lab value
+    {"medications": {"insulln": "Up"}},             # misspelt medicine
+    {"medications": {"insulin": "Maybe"}},          # not a dose change
+    {"discharge_disposition_id": 99},               # unknown code: could be a new code for a death
+    {"admission_type_id": 999},
+    {"diag_1": "NOTACODE"},
+])
+def test_values_outside_the_code_tables_are_refused(client, bundle, change):
+    c, _ = client
+    body = as_request(bundle["serving_check"]["records"][0]) | change
+    assert c.post("/risk", json=body).status_code == 422

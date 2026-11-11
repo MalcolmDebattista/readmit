@@ -22,6 +22,11 @@ INT_COLS = ["encounter_id", "patient_nbr", "admission_type_id", "discharge_dispo
             "number_emergency", "number_inpatient", "number_diagnoses"]
 UNKNOWN_WORDS = {"NULL", "Not Mapped", "Not Available", "Unknown/Invalid"}
 
+# Allowed values, shared by the data check (validate.py) and the API (api.py)
+ICD9_AS_CSV = r"^(\?|[0-9]{1,3}(\.[0-9]{1,2})?|V[0-9]{2}(\.[0-9]{1,2})?|E[0-9]{3}(\.[0-9])?)$"
+LAB = ["None", "Norm", ">7", ">8", ">200", ">300"]
+DOSE = ["No", "Steady", "Up", "Down"]
+
 
 def get_raw(filename: str, raw: Path, kaggle_handle: str) -> Path:
     local = raw / filename

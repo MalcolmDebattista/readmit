@@ -6,6 +6,7 @@ Standard library only, so it runs with any Python 3.
 """
 import argparse
 import json
+import os
 import statistics
 import threading
 import time
@@ -25,7 +26,7 @@ def main():
     args = ap.parse_args()
 
     bodies = [line for line in open(args.file, encoding="utf-8")][: args.count]
-    lat, errors, lock = [], [0], threading.Lock()
+    lat, errors, busy, lock = [], [0], [0], threading.Lock()
 
     def send(body):
         req = urllib.request.Request(args.url, data=body.encode(), headers={"Content-Type": "application/json"})
@@ -35,7 +36,10 @@ def main():
                 r.read()
             with lock:
                 lat.append(time.perf_counter() - t0)
-        except (urllib.error.URLError, TimeoutError):
+        except urllib.error.HTTPError as e:              # 503: the server refused because it is full
+            with lock:
+                (busy if e.code == 503 else errors)[0] += 1
+        except (urllib.error.URLError, TimeoutError):    # no answer in time
             with lock:
                 errors[0] += 1
 
@@ -51,13 +55,14 @@ def main():
 
     ms = sorted(x * 1000 for x in lat) or [float("nan")]   # nan when nothing came back in time
     q = lambda p: ms[min(len(ms) - 1, int(round(p * (len(ms) - 1))))]  # noqa: E731
-    summary = {"label": args.label, "rate_target": args.rate, "sent": len(bodies), "ok": len(lat), "errors": errors[0],
+    summary = {"label": args.label, "rate_target": args.rate, "sent": len(bodies), "ok": len(lat), "errors": errors[0], "refused_503": busy[0],
                "seconds": round(wall, 1), "throughput_per_s": round(len(lat) / wall, 2),
                "p50_ms": round(q(0.50), 1), "p95_ms": round(q(0.95), 1), "p99_ms": round(q(0.99), 1),
                "max_ms": round(ms[-1], 1), "mean_ms": round(statistics.mean(ms), 1), "timeout_s": args.timeout,
                "finished_at": time.strftime("%Y-%m-%d %H:%M:%S")}
     print(json.dumps(summary, indent=2))
     if args.out:
+        os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
         with open(args.out, "a", encoding="utf-8") as f:
             f.write(json.dumps(summary) + "\n")
 

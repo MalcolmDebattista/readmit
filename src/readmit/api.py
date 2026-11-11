@@ -3,13 +3,15 @@ call (human-in-the-loop). The score orders the worklist; it never withholds care
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from readmit.config import load_config, model_path, setup_logging
+from readmit.data import ICD9_AS_CSV
 from readmit.db import save_score
 from readmit.kb import MEDS
 from readmit.metrics import INPUTS, LATENCY, NOT_ELIGIBLE, PREDICTIONS, SCORES
@@ -43,15 +45,27 @@ class Discharge(BaseModel):
     admission_type_id: int
     admission_source_id: int
     discharge_disposition_id: int
-    max_glu_serum: str = "None"           # 'None' means not measured (Trap 5)
-    A1Cresult: str = "None"
-    change: str = "No"
-    diabetesMed: str = "No"
-    medical_specialty: str = "?"
-    diag_1: str = "?"
-    diag_2: str = "?"
-    diag_3: str = "?"
-    medications: dict[str, str] = Field(default_factory=dict, description="column -> No / Steady / Up / Down")
+    # Text values: only the values the hospital extract uses, so a typo is refused instead of silently scored
+    max_glu_serum: Literal["None", "Norm", ">200", ">300"] = "None"     # 'None' means not measured (Trap 5)
+    A1Cresult: Literal["None", "Norm", ">7", ">8"] = "None"
+    change: Literal["No", "Ch"] = "No"
+    diabetesMed: Literal["No", "Yes"] = "No"
+    medical_specialty: str = Field("?", max_length=60)
+    diag_1: str = Field("?", pattern=ICD9_AS_CSV)                        # ICD-9 as the CSV spells it, or '?'
+    diag_2: str = Field("?", pattern=ICD9_AS_CSV)
+    diag_3: str = Field("?", pattern=ICD9_AS_CSV)
+    medications: dict[Literal[tuple(MEDS)], Literal["No", "Steady", "Up", "Down"]] = Field(
+        default_factory=dict, description="medication column -> No / Steady / Up / Down")
+
+    @field_validator("discharge_disposition_id", "admission_type_id", "admission_source_id")
+    @classmethod
+    def known_code(cls, v, info):
+        """An id missing from the hospital's code table is refused: it could be a new code for a death (Trap 4)."""
+        table = bundle["tables"][{"discharge_disposition_id": "DISP", "admission_type_id": "ADM_TYPE",
+                                  "admission_source_id": "ADM_SRC"}[info.field_name]]
+        if v not in table:
+            raise ValueError(f"unknown {info.field_name} {v}: not in the hospital's code table")
+        return v
 
 
 @app.get("/health")

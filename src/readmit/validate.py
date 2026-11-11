@@ -11,13 +11,10 @@ import pandera.pandas as pa
 from dotenv import load_dotenv
 
 from readmit.config import load_config, raw_dir, setup_logging
-from readmit.data import code_tables, read_id_tables, read_raw_csv
+from readmit.data import DOSE, ICD9_AS_CSV, LAB, code_tables, read_id_tables, read_raw_csv
 
 logger = logging.getLogger(__name__)
 
-ICD9_AS_CSV = r"^(\?|[0-9]{1,3}(\.[0-9]{1,2})?|V[0-9]{2}(\.[0-9]{1,2})?|E[0-9]{3}(\.[0-9])?)$"
-LAB = ["None", "Norm", ">7", ">8", ">200", ">300"]
-DOSE = ["No", "Steady", "Up", "Down"]
 
 SCHEMA = pa.DataFrameSchema(
     {

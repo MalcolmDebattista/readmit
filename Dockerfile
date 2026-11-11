@@ -22,5 +22,11 @@ RUN readmit-train && rm -rf data
 ARG MODEL_VERSION=dev
 ENV MODEL_VERSION=${MODEL_VERSION}
 
+# Run as an ordinary user, not root
+RUN useradd --system --uid 10001 readmit
+USER readmit
+
+# --limit-concurrency: beyond 6 requests in progress, answer 503 at once instead of queueing work nobody waits for
+# (without it, 2 requests/s built a queue the server was still working through minutes later)
 EXPOSE 8888
-CMD ["uvicorn", "readmit.api:app", "--host", "0.0.0.0", "--port", "8888"]
+CMD ["uvicorn", "readmit.api:app", "--host", "0.0.0.0", "--port", "8888", "--limit-concurrency", "6"]

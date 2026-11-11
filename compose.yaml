@@ -4,6 +4,7 @@ include:
 services:
   db:
     image: postgres:18
+    restart: unless-stopped
     environment:
       POSTGRES_USER: readmit
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -20,6 +21,7 @@ services:
   api:
     build: .
     image: readmit:${MODEL_VERSION:-dev}
+    restart: unless-stopped
     ports:
       - "8888:8888"
     environment:
