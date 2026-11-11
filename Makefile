@@ -1,5 +1,6 @@
 # Task 26 pipeline. Recipes must start with a TAB.
-VERSION := $(shell python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+# Read with sed so it works on any python3 (tomllib needs 3.11+)
+VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
 IMAGE ?= readmit
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo nogit)
 
