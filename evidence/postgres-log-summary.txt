@@ -1,0 +1,7 @@
+ model_version | eligible | count | avg_score 
+---------------+----------+-------+-----------
+ 0.1.0         | f        |     1 |          
+ 0.1.0         | t        |  1385 |    0.0898
+(2 rows)
+
+ Network readmit-git_default  Removed

@@ -1,4 +1,4 @@
-"""Write every frozen-holdout discharge (deaths and hospice included) as a /risk request body (JSON lines), in discharge order.
+"""Write every frozen-holdout discharge (the eligible test set: no deaths or hospice) as a /risk request body (JSON lines), in order.
 
     python monitoring/export_requests.py            # -> data/processed/holdout_requests.jsonl
 """

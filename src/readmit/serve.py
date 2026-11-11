@@ -1,5 +1,5 @@
 """Scoring one discharge, for the API. It reuses the training code path: add_codes -> build_features -> the champion's
-columns, so serving cannot drift from training (checked by tests/test_serving.py on real holdout discharges)."""
+columns, so serving cannot drift from training (checked by tests/test_model.py on real holdout discharges)."""
 import pandas as pd
 
 from readmit.features import build_features

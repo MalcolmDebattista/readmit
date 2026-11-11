@@ -21,6 +21,7 @@ def main():
     ap.add_argument("--count", type=int, default=1500)
     ap.add_argument("--label", default="steady")
     ap.add_argument("--out", default=None, help="append the summary (JSON) to this file")
+    ap.add_argument("--timeout", type=float, default=10.0, help="seconds before a request counts as an error")
     args = ap.parse_args()
 
     bodies = [line for line in open(args.file, encoding="utf-8")][: args.count]
@@ -30,7 +31,7 @@ def main():
         req = urllib.request.Request(args.url, data=body.encode(), headers={"Content-Type": "application/json"})
         t0 = time.perf_counter()
         try:
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with urllib.request.urlopen(req, timeout=args.timeout) as r:
                 r.read()
             with lock:
                 lat.append(time.perf_counter() - t0)
@@ -48,12 +49,12 @@ def main():
         th.join()
     wall = time.perf_counter() - start
 
-    ms = sorted(x * 1000 for x in lat)
+    ms = sorted(x * 1000 for x in lat) or [float("nan")]   # nan when nothing came back in time
     q = lambda p: ms[min(len(ms) - 1, int(round(p * (len(ms) - 1))))]  # noqa: E731
-    summary = {"label": args.label, "rate_target": args.rate, "sent": len(bodies), "ok": len(ms), "errors": errors[0],
-               "seconds": round(wall, 1), "throughput_per_s": round(len(ms) / wall, 2),
+    summary = {"label": args.label, "rate_target": args.rate, "sent": len(bodies), "ok": len(lat), "errors": errors[0],
+               "seconds": round(wall, 1), "throughput_per_s": round(len(lat) / wall, 2),
                "p50_ms": round(q(0.50), 1), "p95_ms": round(q(0.95), 1), "p99_ms": round(q(0.99), 1),
-               "max_ms": round(ms[-1], 1), "mean_ms": round(statistics.mean(ms), 1),
+               "max_ms": round(ms[-1], 1), "mean_ms": round(statistics.mean(ms), 1), "timeout_s": args.timeout,
                "finished_at": time.strftime("%Y-%m-%d %H:%M:%S")}
     print(json.dumps(summary, indent=2))
     if args.out:
