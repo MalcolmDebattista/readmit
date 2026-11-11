@@ -1,0 +1,17 @@
+# Never commit secrets, patient data, or anything a fresh copy can rebuild.
+.env
+.venv/
+data/raw/
+data/processed/
+models/
+reports/
+mlruns/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+# course material and personal notes stay local
+reference/
+Diary Entry 1 - PLAN.md
+evidence/private/

@@ -1,0 +1,51 @@
+# Task 26 settings: the CAPITALS of the notebook's Section 0, unchanged.
+# Machine-specific values (data folder, model path, DB password) live in .env.
+
+seed: 3217
+kaggle_handle: "brandao/diabetes"
+uci_zip: "https://archive.ics.uci.edu/static/public/296/diabetes+130-us+hospitals+for+years+1999-2008.zip"
+salt: "ari3217-task26"        # in a real system the salt is a secret held outside Git
+
+# Cut points on the encounter-order proxy (there are no dates)
+train_end_q: 0.70
+valid_end_q: 0.85
+target: "<30"                 # readmitted within 30 days; ">30" and "NO" are both negatives (Trap 3)
+
+# Operating assumptions (C3 varies them)
+discharges_per_week: 195
+calls_per_week: 25
+call_cost_eur: 30.0
+readmission_cost_eur: 12000.0
+call_effect: 0.10
+n_boot: 200
+n_jobs: 1
+
+lgb_params:
+  n_estimators: 250
+  learning_rate: 0.05
+  num_leaves: 31
+  min_child_samples: 100
+  subsample: 0.8
+  subsample_freq: 1
+  colsample_bytree: 0.8
+  reg_lambda: 5.0
+  cat_l2: 10
+  cat_smooth: 20
+  max_cat_to_onehot: 8
+  min_data_per_group: 50
+  verbose: -1
+
+# Paths (relative to the project folder; DATASETS_TASKS_DATA and MODEL_PATH override)
+data_dir: "data"
+model_path: "models/model.joblib"
+report_path: "reports/metrics.json"
+
+# The notebook's numbers this package must reproduce (C2), and the tolerance
+expected:
+  train: 69609
+  valid: 10913
+  test: 10781
+  holdout_auprc: 0.153
+  holdout_roc_auc: 0.637
+  precision_at_capacity: 0.165
+tolerance: 0.0005
