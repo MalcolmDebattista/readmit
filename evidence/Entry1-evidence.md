@@ -33,7 +33,7 @@ All measurements were taken on 11 Nov 2026. The repo is github.com/MalcolmDebatt
 
 | What | Value |
 |---|---|
-| Image | `readmit:0.1.0` and `readmit:0.1.0-9bc2b13`, **1.03 GB** (python:3.12-slim + LightGBM/pandas/pyarrow/rdflib) |
+| Image | `readmit:0.1.0` and `readmit:0.1.0-9bc2b13`, **1.03 GB on disk, 236 MB compressed** (python:3.12-slim + LightGBM/pandas/pyarrow/rdflib) |
 | Build | 281 s; the model is trained inside the build, and the build fails if the notebook's numbers are not reproduced |
 | Stack (`make up`) | api :8888, Postgres 18, Prometheus, Grafana |
 
@@ -107,6 +107,30 @@ The cost is almost all fixed per call (pandas building the whole feature frame),
   - load shedding or timeouts;
   - finer latency buckets;
   - a connection pool.
+
+## 6b. Full system check and the fixes it led to (version 0.1.1)
+
+The whole system was re-tested from a fresh GitHub clone: install, train, build, run the 4 services, send good and bad
+requests, put it under load and break parts on purpose. The first run on 0.1.0 found these problems:
+
+| Problem found (0.1.0) | Risk | Fix (0.1.1, commits `36c154c`, `3373b2f`) |
+|---|---|---|
+| Nonsense values were scored: A1C "banana", a misspelt medicine "insulln", a dose "Maybe" | Garbage in, a confident score out | Only the values in the hospital extract are accepted; anything else gets 422 |
+| **Unknown discharge code 99 was scored as an ordinary patient** | A new hospital code for a death would put the patient on the call list (Trap 4 again) | Ids not in the code table are refused |
+| After overload the server worked through abandoned requests for **59 s** | Slow for everyone after a spike | `--limit-concurrency 32`: extra requests get 503 at once; **recovery now 3 s** |
+| Container ran as root | Security | Runs as an ordinary user |
+| A crashed container stayed down | Availability | `restart: unless-stopped` |
+
+The re-run on 0.1.1 gave **51 checks passed, 0 failed**:
+- the fresh clone reproduces AUPRC 0.153, with **31 tests** passing;
+- **all 10,781 real holdout requests are still accepted**;
+- the realistic load gave p95 831 ms with 0 errors;
+- a burst of 30 at once was all answered, in 34 s;
+- under overload at 3/s, 49 requests were refused with 503 and the API was healthy again 3 s later.
+
+**Still open, YOUR CALL:** if Postgres is down, the API **still answers** but the score is not saved, and only an
+error line is logged. It "fails open": the nurse still gets the list, but there is no audit record. Is that right for a
+clinical tool, or should it refuse to score without a log? (Think about the AI Act's logging requirements.)
 
 ## 7. Regulation and architecture, facts to reason from
 

@@ -59,7 +59,7 @@ The Grafana dashboard "Readmission risk service" is provisioned automatically.
 
 ## Tests
 
-`pytest -q` runs 25 tests: the traps, the model helpers, a check that the package reproduces the notebook's
+`pytest -q` runs 31 tests: the traps, input values outside the code tables (refused with 422), the model helpers, a check that the package reproduces the notebook's
 metrics, a check that serving scores equal training scores, and API tests. Tests that need the data or the trained
 model are skipped on a fresh clone until `readmit-fetch` and `readmit-train` have been run.
 
