@@ -31,7 +31,10 @@ On Linux, `make install fetch check-data train test` does the same.
 | `readmit-train` (`train.py`) | Notebook pipeline: split by time, knowledge base, feature ladder, champion by bootstrap, frozen holdout |
 | `kb.py` | ICD-9 knowledge base (rdflib), SHACL code checks, competency queries CQ1–CQ3 |
 | `features.py`, `model.py` | Feature builder and model code, unchanged from the notebook |
-| `serve.py`, `api.py` | Scoring of raw discharge records; FastAPI `POST /risk` |
+| `readmit-gate` (`gate.py`) | Quality gate: precision at capacity on the frozen holdout, with a bootstrap interval and the prior-stays rule as baseline |
+| `readmit-registry` (`registry.py`) | MLflow registry: register a gated run, move the `champion` alias, attach the model card |
+| `readmit-drift` (`drift.py`) | PSI of the score and top inputs, and the model's metric, per 5 % slice of the order |
+| `serve.py`, `api.py` | Scoring of raw discharge records; FastAPI `POST /risk`; loads `models:/readmit@champion` |
 | `config/config.yaml` | Every notebook constant, plus the numbers the package must reproduce |
 
 ## Data traps handled (and tested in `tests/test_traps.py`)
@@ -48,8 +51,10 @@ On Linux, `make install fetch check-data train test` does the same.
 ## Service
 
 ```bash
-make build        # docker image readmit:<version>, model trained inside the build
-make up           # api :8888, Postgres, Prometheus :9090, Grafana :3000
+make build        # docker image readmit:<version>: code only, no data, no model
+make up           # api :8888, Postgres, MLflow :5000 (add --profile monitoring for Prometheus :9090, Grafana :3000)
+make register     # train, record the run in MLflow, register it if it passed the gate
+make champion V=1 # point the champion alias at version 1 and restart the API (also the rollback)
 curl -X POST localhost:8888/risk -H 'Content-Type: application/json' -d @example.json
 make load         # replays the holdout discharges against /risk and records latency in reports/load.jsonl
 make down
@@ -61,16 +66,21 @@ The Grafana dashboard "Readmission risk service" is provisioned automatically.
 
 ## Tests
 
-`pytest -q` runs 31 tests: the traps, input values outside the code tables (refused with 422), the model helpers, a check that the package reproduces the notebook's
+`pytest -q` runs 36 tests: the traps, input values outside the code tables (refused with 422), the model helpers, a check that the package reproduces the notebook's
 metrics, a check that serving scores equal training scores, and API tests. Tests that need the data or the trained
 model are skipped on a fresh clone until `readmit-fetch` and `readmit-train` have been run.
 
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs `make ci` on a fresh GitHub machine for every push and pull request:
-fetch the data → `readmit-check-data` → `readmit-train` (fails if the notebook's numbers are not reproduced) →
-ruff → the 31 tests → `docker build`. If every step passes on `main`, the image is published as
+fetch the data → ruff → the 36 tests → `readmit-check-data` → `readmit-gate` (trains, checks the notebook's numbers
+and the holdout fingerprint, fails below precision at capacity 0.15) → model tests → `docker build`. If every step passes on `main`, the image is published as
 `ghcr.io/malcolmdebattista/readmit:<version>` and `:<version>-<commit>`.
+
+## Diary Entry 2
+
+- Gate decision: `docs/decisions/0002-gate-metric.md`. Model card: `docs/model_card.md`.
+- Measured evidence (splits, MLflow runs, registry, rollback, drift): `evidence/Entry2-evidence.md`, `evidence/entry2/`.
 
 ## Data
 

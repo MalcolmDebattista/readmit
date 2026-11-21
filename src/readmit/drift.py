@@ -82,7 +82,7 @@ def plot(table, watched, config, path):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     x = table.start + config["drift_slice"] / 2
-    fig, ax = plt.subplots(figsize=(9, 4.6))
+    fig, ax = plt.subplots(figsize=(12, 4.8))
     for col, style in zip(["PSI score"] + [f"PSI {f}" for f in watched], ["-", "--", ":", "-.", (0, (5, 2, 1, 2))]):
         ax.plot(x, table[col], linestyle=style, marker="o", ms=4, lw=2 if col == "PSI score" else 1.4, label=col)
     ax.axhline(0.10, color="grey", lw=0.8); ax.text(x.iloc[0], 0.105, "PSI 0.10", fontsize=8, color="grey")
@@ -91,13 +91,13 @@ def plot(table, watched, config, path):
     ax.set_ylabel("PSI against the training period")
     ax.axvline(config["valid_end_q"], color="black", lw=0.6)
     ax2 = ax.twinx()
-    ax2.plot(x, table["precision@capacity"], color="black", lw=2.2, marker="s", label="precision at capacity (right)")
-    ax2.axhline(config["gate_threshold"], color="black", lw=0.8, ls=":")
-    ax2.text(x.iloc[-1], config["gate_threshold"] - 0.012, f"gate {config['gate_threshold']:.0%}", fontsize=8, ha="right")
+    # All eligible discharges in the slice, returning patients included, so not comparable with the gate (new patients)
+    ax2.plot(x, table["precision@capacity"], color="black", lw=2.2, marker="s",
+             label="precision at capacity, all eligible discharges (right)")
     ax2.set_ylabel("precision at capacity")
     ax2.set_ylim(0, max(0.35, table["precision@capacity"].max() * 1.15))
     h1, l1 = ax.get_legend_handles_labels(); h2, l2 = ax2.get_legend_handles_labels()
-    ax.legend(h1 + h2, l1 + l2, fontsize=8, loc="upper left", frameon=False)
+    ax.legend(h1 + h2, l1 + l2, fontsize=8, loc="upper left", bbox_to_anchor=(1.08, 1), frameon=False)
     ax.set_title("Input drift and model metric along the encounter order", loc="left", fontsize=11, fontweight="bold")
     fig.tight_layout(); fig.savefig(path, dpi=150); plt.close(fig)
 

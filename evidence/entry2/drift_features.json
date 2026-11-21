@@ -1,0 +1,26 @@
+{
+  "watched": [
+    "number_inpatient",
+    "discharge_disposition",
+    "num_lab_procedures",
+    "medical_specialty"
+  ],
+  "gain": {
+    "number_inpatient": 12921.5,
+    "discharge_disposition": 9447.7,
+    "num_lab_procedures": 6529.5,
+    "medical_specialty": 6154.3,
+    "num_medications": 4472.5,
+    "time_in_hospital": 3668.3,
+    "num_procedures": 1984.9,
+    "admission_type": 1920.0,
+    "prior_enc": 1711.8,
+    "admission_source": 1655.8,
+    "number_emergency": 1121.3,
+    "A1Cresult": 919.9,
+    "diabetesMed": 815.6,
+    "number_outpatient": 784.9,
+    "max_glu_serum": 517.8,
+    "change": 437.7
+  }
+}
