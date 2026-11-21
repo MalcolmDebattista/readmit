@@ -9,3 +9,6 @@ CREATE TABLE risk_scores (
     score DOUBLE PRECISION,          -- NULL when not eligible (death or hospice)
     model_version TEXT NOT NULL
 );
+
+-- MLflow keeps its records in a database of its own, on the same server (Session 06).
+CREATE DATABASE mlflow;

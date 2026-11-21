@@ -20,16 +20,43 @@ services:
 
   api:
     build: .
-    image: readmit:${MODEL_VERSION:-dev}
+    image: readmit:${APP_VERSION:-dev}
     restart: unless-stopped
     ports:
       - "8888:8888"
     environment:
-      MODEL_VERSION: ${MODEL_VERSION:-dev}
+      APP_VERSION: ${APP_VERSION:-dev}
       DATABASE_URL: postgresql://readmit:${DB_PASSWORD}@db:5432/readmit
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_URI: models:/readmit@champion       # move the alias, restart the API: that is a rollback
+      MLFLOW_HTTP_REQUEST_MAX_RETRIES: "0"      # fail fast and let the API retry, so /ready reflects reality
+      MLFLOW_HTTP_REQUEST_TIMEOUT: "10"
+    depends_on:
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+
+  # Session 06: the tracking server and model registry, on port 5000. Records in Postgres, files in a volume.
+  mlflow:
+    build: ./mlflow
+    image: readmit-mlflow:3.17.2
+    restart: unless-stopped
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000 --workers 1
+      --backend-store-uri postgresql://readmit:${DB_PASSWORD}@db:5432/mlflow
+      --artifacts-destination /mlartifacts
+      --allowed-hosts "localhost:*,127.0.0.1:*,mlflow:*"
+    environment:
+      MLFLOW_SERVER_ENABLE_JOB_EXECUTION: "false"   # no background job workers: not needed, and they cost 1.5 GB
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-artifacts:/mlartifacts
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   db-data:
+  mlflow-artifacts:

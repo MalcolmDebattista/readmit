@@ -1,11 +1,19 @@
+import time
+
 import pytest
 
 
 @pytest.fixture(scope="module")
 def client(bundle):
+    """The API with the locally trained bundle (MODEL_URI = a file; no registry needed). It loads in the background."""
     from fastapi.testclient import TestClient
     import readmit.api as api
-    return TestClient(api.app), api
+    with TestClient(api.app) as c:
+        for _ in range(100):
+            if c.get("/ready").status_code == 200:
+                break
+            time.sleep(0.1)
+        yield c, api
 
 
 def as_request(record):
@@ -15,9 +23,27 @@ def as_request(record):
     return body
 
 
-def test_health(client):
-    c, _ = client
-    assert c.get("/health").json()["status"] == "ok"
+def test_health_and_ready(client):
+    c, api = client
+    assert c.get("/health").json() == {"status": "ok"}
+    body = c.get("/ready").json()
+    assert body["ready"] is True and body["model_version"] == f"file:{api.MODEL_URI}"
+
+
+def test_alive_but_not_ready_without_a_model(client, monkeypatch, tmp_path, bundle):
+    """Session 06: /health 200 at once, /ready and /risk 503 until a model is loaded."""
+    from fastapi.testclient import TestClient
+    _, api = client
+    saved = dict(api.state)
+    monkeypatch.setattr(api, "MODEL_URI", str(tmp_path / "missing.joblib"))
+    api.state.update(bundle=None, model_version=None)
+    try:
+        with TestClient(api.app) as c:
+            assert c.get("/health").status_code == 200
+            assert c.get("/ready").status_code == 503
+            assert c.post("/risk", json=as_request(bundle["serving_check"]["records"][0])).status_code == 503
+    finally:
+        api.state.update(saved)
 
 
 def test_api_matches_the_training_scores(client, bundle):

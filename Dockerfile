@@ -13,14 +13,12 @@ COPY src ./src
 COPY config ./config
 RUN pip install --no-cache-dir --no-deps .
 
-# The raw data (from `readmit-fetch`) is copied in and the model trained at build time, as in Session 3.
-# The build fails if the package does not reproduce the notebook's numbers.
-COPY data/raw ./data/raw
-RUN readmit-train && rm -rf data
+# Session 06: the image holds code only. The model comes from the registry when the API starts
+# (MODEL_URI=models:/readmit@champion in compose.yaml), so a new model needs no new image and no patient data is inside.
 
-# The version comes from pyproject.toml through `make build`; the API reports it and logs it with every score.
-ARG MODEL_VERSION=dev
-ENV MODEL_VERSION=${MODEL_VERSION}
+# The code's version comes from pyproject.toml through `make build`; /ready reports it.
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
 
 # Run as an ordinary user, not root
 RUN useradd --system --uid 10001 readmit

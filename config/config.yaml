@@ -9,6 +9,9 @@ salt: "ari3217-task26"        # in a real system the salt is a secret held outsi
 # Cut points on the encounter-order proxy (there are no dates)
 train_end_q: 0.70
 valid_end_q: 0.85
+# Training window: null = every training patient. A number (e.g. 0.35) trains only on patients first met from that
+# point in the order on. The holdout does not move.
+train_start_q: null
 target: "<30"                 # readmitted within 30 days; ">30" and "NO" are both negatives (Trap 3)
 
 # Operating assumptions (C3 varies them)
@@ -49,3 +52,25 @@ expected:
   holdout_roc_auc: 0.637
   precision_at_capacity: 0.165
 tolerance: 0.0005
+
+# ---- Diary Entry 2 (Sessions 05-06) ----
+# The frozen holdout: new patients first met from order 0.85 on (the last 15 % of encounter_id order; there are no
+# dates), 10,781 eligible discharges. The fingerprint covers the patients, order, labels and the champion's features.
+# If it no longer matches, readmit-gate refuses to judge (exit code 2).
+holdout_start_q: 0.85
+holdout_sha256: "86c7d8ac388e6f5424d54b34d5e3067b2ebd7aff02e833977a5137f0b74c655f"
+
+# The quality gate: the metric that blocks a release and its threshold. Reasons: docs/decisions/0002-gate-metric.md
+# Metrics printed by readmit-gate: precision@capacity, AUPRC, ROC-AUC
+gate_metric: "precision@capacity"
+gate_threshold: 0.15
+gate_boot: 1000                # patient-level bootstrap resamples for the intervals
+
+# MLflow (Session 06). MLFLOW_TRACKING_URI in .env overrides tracking_uri; "none" trains without recording.
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment: "readmit"
+  model_name: "readmit"
+
+# Monitoring (readmit-drift): slices of the encounter order after the training period
+drift_slice: 0.05
