@@ -11,7 +11,7 @@ train_end_q: 0.70
 valid_end_q: 0.85
 # Training window: null = every training patient. A number (e.g. 0.35) trains only on patients first met from that
 # point in the order on. The holdout does not move.
-train_start_q: null
+train_start_q: 0.5
 target: "<30"                 # readmitted within 30 days; ">30" and "NO" are both negatives (Trap 3)
 
 # Operating assumptions (C3 varies them)
