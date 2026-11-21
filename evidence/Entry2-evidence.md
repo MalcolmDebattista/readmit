@@ -30,9 +30,12 @@ Decision: precision at capacity ≥ 0.15 (ADR `docs/decisions/0002-gate-metric.m
 | ROC-AUC | 0.637 | 0.618 to 0.656 | 0.561 (0.542 to 0.581) | 0.5 |
 
 - `make ci` order: fetch, lint, tests (36), data validation, **gate**, model tests, image.
-- Failing CI run: **to do, needs a push**. Planned: a branch that trains only on patients from order 0.50 fails
-  the gate at 0.145.
-- Passing CI run: **to do, needs a push**.
+- Passing CI run: main at `7ffaba4`, `make ci` green and image published:
+  https://github.com/MalcolmDebattista/readmit/actions/runs/44919332227
+- Failing CI run: branch `try-recent-window` at `bea9b39` (`train_start_q: 0.5`), `make ci` red after 33 s and
+  nothing published: https://github.com/MalcolmDebattista/readmit/actions/runs/44919344448
+  The same commit's gate, run locally: "GATE FAIL: precision@capacity 0.145 is below 0.150", exit code 1
+  (model 0.145, interval 0.126 to 0.166; prior-stays rule 0.127). The CI log itself needs a GitHub sign-in to read.
 
 ## 3. MLflow runs and registry (experiment `readmit`)
 
